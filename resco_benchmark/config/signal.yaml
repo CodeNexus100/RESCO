@@ -1157,7 +1157,7 @@
     'top_right_mgr': [ 'top_mgr', 'top_left_mgr' ]
   }}
 'cologne1': {
-  'phase_pairs': [ ['W-W', 'W-S'], ['E-E', 'E-N'], ['W-W', 'E-E'], ['W-S', 'E-N'], ['N-N', 'N-W'], ['S-S', 'S-E'], ['S-S', 'N-N'], ['S-E', 'N-W'] ],
+  'phase_pairs': [ ['E-E', 'E-N'], ['W-W', 'W-S'], ['W-W', 'E-E'], ['W-S', 'E-N'], ['N-N', 'N-W'], ['S-S', 'S-E'], ['S-S', 'N-N'], ['S-E', 'N-W'] ],
   'pair_to_act_map': null,
   'cluster_357187_359543': {
     'lane_sets': {
