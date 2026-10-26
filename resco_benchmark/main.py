@@ -1,7 +1,10 @@
 import os
 import time
+import random
 import logging
 import importlib
+
+import numpy as np
 
 from resco_benchmark.config.config import config as cfg
 from resco_benchmark.utils.logs import parse_logs
@@ -44,8 +47,22 @@ def main():
         print("Time taken:", time.time() - start)
 
 
+def seed_everything(seed):
+    """Seed Python, numpy and (if installed) torch. SUMO is seeded per episode in MultiSignal."""
+    random.seed(seed)
+    np.random.seed(seed)
+    try:
+        import torch
+    except ImportError:
+        return
+    torch.manual_seed(seed)
+
+
 def run_trial():
     print(f"cfg.run_name: {cfg.run_name}")
+    if cfg.seed is not None:
+        seed_everything(int(cfg.seed))
+        logger.info(f"Seeded python/numpy/torch with {cfg.seed}")
     if cfg.route is not None:
         cfg.route = str(os.path.join(os.path.dirname(__file__), cfg.route))
 

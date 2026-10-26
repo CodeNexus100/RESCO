@@ -4,6 +4,7 @@ import logging
 import pickle
 import uuid
 
+import numpy as np
 import gymnasium as gym
 
 from resco_benchmark.agents.static.fixed import FIXED
@@ -57,6 +58,10 @@ class MultiSignal(gym.Env):
         self.sumo = None  # Set by start_sumo
         self.best_reward = None
         self.best_episode = None
+        # Dedicated stream for per-episode SUMO seeds, independent of agent RNG consumption
+        self.sumo_seed_rng = (
+            np.random.default_rng(int(cfg.seed)) if cfg.seed is not None else None
+        )
         if "prob_test" in cfg:
             self.context = 0
 
@@ -262,8 +267,6 @@ class MultiSignal(gym.Env):
                 cfg.route,
                 "--step-length",
                 f"{cfg.step_ratio}",
-                "--random",
-                "True",
                 "--no-warnings",
                 "True",
                 "--no-step-log",
@@ -291,6 +294,15 @@ class MultiSignal(gym.Env):
             "--tripinfo-output",
             cfg.run_path + "tripinfo_{0}.xml".format(self.cumulative_episode),
         ]
+
+        if self.sumo_seed_rng is None:
+            sumo_cmd += ["--random", "True"]
+        else:
+            episode_seed = int(self.sumo_seed_rng.integers(0, 2**31 - 1))
+            sumo_cmd += ["--seed", str(episode_seed)]
+            logger.info(
+                f"Episode {self.cumulative_episode} SUMO seed: {episode_seed}"
+            )
 
         # Years long data requires a different start/end time between episodes
         if "saltlake" in cfg.map or cfg.run_hour is not None:

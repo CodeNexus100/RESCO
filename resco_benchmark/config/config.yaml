@@ -41,7 +41,7 @@
             save_console_log: True      # All console output will be saved to a log file in the log_dir, console will be blank
             delete_episode_logs: True
 
-            seed: null # Unused right now, TODO make fully reproducible runs with seeding
+            seed: null # null keeps upstream SUMO --random; an int seeds python/numpy/torch and per-episode SUMO --seed
             gpu: 0
             flat_state: True
 
