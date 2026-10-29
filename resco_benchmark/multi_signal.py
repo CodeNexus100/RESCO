@@ -56,6 +56,7 @@ class MultiSignal(gym.Env):
         self.original_route = cfg.route
         self.sumo_cmd = None
         self.sumo = None  # Set by start_sumo
+        self.sumo_running = False
         self.best_reward = None
         self.best_episode = None
         # Dedicated stream for per-episode SUMO seeds, independent of agent RNG consumption
@@ -575,6 +576,7 @@ class MultiSignal(gym.Env):
         using the traci library over a local network connection.
         """
         cmd = self.build_sumo_cmd()
+        self.sumo_running = True
         if cfg.libsumo:
             traci.start(cmd)
             self.sumo = traci
@@ -601,9 +603,13 @@ class MultiSignal(gym.Env):
                     self.sumo.vehicle.remove(veh)
 
     def sumo_close(self):
+        # Idempotent, so an episode can be closed (tripinfo flushed) before checkpointing and reset() still works
+        if not self.sumo_running:
+            return
         if not cfg.libsumo:
             traci.switch(cfg.uuid)
         traci.close()
+        self.sumo_running = False
         if len(self.metrics) != 0:
             self.save_metrics()
 

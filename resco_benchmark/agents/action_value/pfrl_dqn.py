@@ -134,7 +134,7 @@ class DQNAgent(Agent):
         super().__init__()
         self.agent_id = agent_id
         self.model = model
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=cfg.learning_rate)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=float(cfg.learning_rate))  # plain float: torch.load(weights_only) rejects YAML ScalarFloat in checkpoints
         self._training = True
 
         if "fasttrac" in cfg:
@@ -182,7 +182,7 @@ class DQNAgent(Agent):
                 self.replay_buffer,
                 cfg.discount,
                 explorer,
-                gpu=self.device.index,
+                gpu=self.device.index if self.device.type == "cuda" else None,
                 minibatch_size=cfg.batch_size,
                 replay_start_size=cfg.batch_size,
                 phi=lambda x: np.asarray(x, dtype=np.float32),
@@ -196,12 +196,18 @@ class DQNAgent(Agent):
                 self.replay_buffer,
                 cfg.discount,
                 explorer,
-                gpu=self.device.index,
+                gpu=self.device.index if self.device.type == "cuda" else None,
                 minibatch_size=cfg.batch_size,
                 replay_start_size=cfg.batch_size,
                 phi=lambda x: np.asarray(x, dtype=np.float32),
                 target_update_interval=cfg.target_update_steps,
             )
+
+        # pfrl only knows CUDA; for other accelerators (e.g. Intel XPU) build on CPU, then move
+        if self.device.type not in ("cpu", "cuda"):
+            self.agent.device = self.device
+            self.agent.model.to(self.device)
+            self.agent.target_model.to(self.device)
 
     def act(self, observation, pair_to_act_map=None, reverse_valid=None):
         if isinstance(self.agent, SharedDQN):

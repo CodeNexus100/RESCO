@@ -4,10 +4,13 @@ from resco_benchmark.config.config import config as cfg
 
 class Agent(object):
     def __init__(self):
-        if torch.cuda.is_available():
-            device = "cuda:" + str(cfg.gpu)
+        # torch_device: "auto" (upstream behaviour: CUDA if available, else CPU) or an explicit
+        # "cpu" / "xpu" / "cuda:N"
+        requested = str(cfg.torch_device) if "torch_device" in cfg else "auto"
+        if requested == "auto":
+            device = "cuda:" + str(cfg.gpu) if torch.cuda.is_available() else "cpu"
         else:
-            device = "cpu"
+            device = requested
         self.device = torch.device(device)
         cfg.device = torch.device(device)
 

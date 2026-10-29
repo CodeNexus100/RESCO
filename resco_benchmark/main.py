@@ -9,6 +9,7 @@ import numpy as np
 from resco_benchmark.config.config import config as cfg
 from resco_benchmark.utils.logs import parse_logs
 from resco_benchmark.utils.utils import cleanup_log_dir
+import resco_benchmark.utils.checkpoint as checkpoint
 from resco_benchmark.multi_signal import MultiSignal
 import resco_benchmark.mdp_options.states as states
 import resco_benchmark.mdp_options.rewards as rewards
@@ -107,8 +108,16 @@ def run_trial():
         cfg.episodes * adj_len
     )  # TODO test if cfg.testing is ok for curriculum
 
+    checkpointing = "checkpoint" in cfg and cfg.checkpoint
+    start_episode = 0
+    if checkpointing:
+        start_episode = checkpoint.load_latest_checkpoint(cfg.run_path, agent, env)
+        if start_episode:
+            logger.info(f"Resumed from checkpoint after episode {start_episode}")
+
     terminated = False
-    for __ in range(minimum_length):
+    for episode in range(start_episode, minimum_length):
+        episode_start = time.time()
         obs, info = env.reset()
         if terminated and cfg.delete_episode_logs:
             parse_logs()
@@ -130,6 +139,9 @@ def run_trial():
 
         if "init_ender" in cfg and cfg.init_ender:
             break
+        if checkpointing:
+            env.sumo_close()  # flush this episode's tripinfo/metrics before the checkpoint covers it
+            checkpoint.save_checkpoint(cfg.run_path, episode + 1, agent, env, time.time() - episode_start)
 
     agent.testing()
     terminated = False
@@ -145,6 +157,8 @@ def run_trial():
 
     if cfg.save_model:
         agent.save()
+    if checkpointing:
+        checkpoint.finalize(cfg.run_path, agent)
     env.close()
     if cfg.delete_episode_logs:
         cleanup_log_dir()

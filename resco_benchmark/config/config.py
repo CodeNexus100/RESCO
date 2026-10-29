@@ -18,6 +18,8 @@ if not os.getcwd().endswith("resco_benchmark") and "utils" not in sys.argv[0]:
 
 config_to_ignore_hashing = [
     "uuid",
+    "run_uuid",  # fixed run folder for checkpoint/resume; does not change results
+    "checkpoint",
     "log_dir",
     "names_map",
     "hashed_name",
@@ -113,7 +115,9 @@ def load_config():
     # Basic attribute adjustment
     config_build.map = profs[0].replace("@", "")
     config_build.algorithm = profs[1].replace("@", "")
-    config_build.uuid = str(uuid.uuid4())
+    # run_uuid lets a restarted process reuse its run folder (checkpoint resume); otherwise a fresh uuid
+    run_uuid = config_build.get("run_uuid") if "run_uuid" in config_build else None
+    config_build.uuid = str(run_uuid) if run_uuid else str(uuid.uuid4())
 
     # Want dates as simple strings
     if "saltlake" in config_build.map:
