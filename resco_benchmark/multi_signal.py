@@ -367,7 +367,7 @@ class MultiSignal(gym.Env):
         elif (
             cfg.flow != 0 or cfg.curriculum is not None
         ):  # If the flow is altered, generate new flow files
-            cfg.route, self.episode_vehicles = generate_additional_flow()
+            cfg.route, self.episode_vehicles = generate_additional_flow(self.original_route)
 
         self.episode_reward = 0.0
         self.cumulative_episode += 1

@@ -7,13 +7,17 @@ from resco_benchmark.config.config import config as cfg
 
 
 # TODO rewrite
-def generate_additional_flow():
+def generate_additional_flow(source_route=None):
+    """source_route: the configured route file (cfg.route at start-up). Defaults to the map's stock
+    <map>.rou.xml, which is also used when the configured route is not a .rou.xml (e.g. grid4x4)."""
     map_path = os.path.join(os.path.dirname(cfg.network))
     fractional = cfg.flow % 1
     multiple = int(cfg.flow)
+    if source_route is None or not source_route.endswith(".rou.xml"):
+        source_route = os.path.join(map_path, cfg.map + ".rou.xml")
 
     try:
-        tree = ET.parse(os.path.join(map_path, cfg.map + ".rou.xml"))
+        tree = ET.parse(source_route)
         root = tree.getroot()
 
         # Handling flows >= 2.0
