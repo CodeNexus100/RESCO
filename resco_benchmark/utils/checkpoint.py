@@ -8,10 +8,12 @@ and torch RNG states. Restoring all of that makes the resumed run continue exact
 Layout in cfg.run_path:
     checkpoint_<episode>/      one folder per checkpoint; only the newest complete one is kept
         state.pkl              episode, env state, RNG states
-        agent_<name>/          pfrl DQN.save_snapshot() output
+        agent_<i>/             pfrl DQN.save_snapshot() output for the i-th DQN (names in state.pkl; signal ids
+                               are too long for folder names under Windows' 260-character path limit)
         COMPLETE               written last; folders without it are ignored (interrupted mid-write)
     progress.csv               episode, finished_unix_time, episode_seconds (appended every episode)
-    final_model_<name>.pt      trained weights (model state_dict), written when the run finishes
+    final_model_<i>.pt         trained weights (model state_dict) of the i-th DQN, written when the run finishes;
+    final_model_agents.txt     which agent / signal each final_model_<i>.pt belongs to
 """
 import csv
 import glob
@@ -41,10 +43,6 @@ def pfrl_dqns(agent):
     if isinstance(inner, DQN):
         found["shared"] = inner
     return found
-
-
-def _safe_name(name):
-    return "".join(c if c.isalnum() or c in "-_." else "_" for c in name)
 
 
 def _rng_state():
@@ -84,12 +82,14 @@ def save_checkpoint(run_path, episode, agent, env, episode_seconds):
     if os.path.exists(path):
         shutil.rmtree(path)  # leftover from an interrupted attempt at this same episode
     os.makedirs(path)
-    for name, dqn in pfrl_dqns(agent).items():
-        sub = os.path.join(path, "agent_" + _safe_name(name))
+    dqns = pfrl_dqns(agent)
+    for i, dqn in enumerate(dqns.values()):
+        sub = os.path.join(path, f"agent_{i}")
         os.makedirs(sub)
         dqn.save_snapshot(sub)
     state = {
         "episode": episode,
+        "agents": list(dqns),  # agent_<i> folder i holds the DQN of this name
         "env": {
             "cumulative_episode": env.cumulative_episode,
             "sumo_seed_rng": None if env.sumo_seed_rng is None else env.sumo_seed_rng.bit_generator.state,
@@ -119,10 +119,13 @@ def load_latest_checkpoint(run_path, agent, env):
     if not found:
         return 0
     episode, path = found[-1]
-    for name, dqn in pfrl_dqns(agent).items():
-        dqn.load_snapshot(os.path.join(path, "agent_" + _safe_name(name)))
     with open(os.path.join(path, "state.pkl"), "rb") as f:
         state = pickle.load(f)
+    dqns = pfrl_dqns(agent)
+    if state["agents"] != list(dqns):
+        raise RuntimeError(f"checkpoint agents {state['agents']} do not match this run's agents {list(dqns)}")
+    for i, dqn in enumerate(dqns.values()):
+        dqn.load_snapshot(os.path.join(path, f"agent_{i}"))
     env.cumulative_episode = state["env"]["cumulative_episode"]
     if state["env"]["sumo_seed_rng"] is not None:
         env.sumo_seed_rng.bit_generator.state = state["env"]["sumo_seed_rng"]
@@ -136,8 +139,11 @@ def finalize(run_path, agent):
     """Write the trained weights (small) and remove checkpoint folders (they hold the large replay buffers)."""
     import torch
 
-    for name, dqn in pfrl_dqns(agent).items():
-        torch.save(dqn.model.state_dict(), os.path.join(run_path, f"final_model_{_safe_name(name)}.pt"))
+    dqns = pfrl_dqns(agent)
+    for i, dqn in enumerate(dqns.values()):
+        torch.save(dqn.model.state_dict(), os.path.join(run_path, f"final_model_{i}.pt"))
+    with open(os.path.join(run_path, "final_model_agents.txt"), "w") as f:
+        f.writelines(f"final_model_{i}.pt\t{name}\n" for i, name in enumerate(dqns))
     for _, path in complete_checkpoints(run_path):
         shutil.rmtree(path, ignore_errors=True)
     for path in glob.glob(os.path.join(run_path, "checkpoint_*")):
