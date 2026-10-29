@@ -54,7 +54,8 @@ def generate_additional_flow():
                     root.remove(child)
                     total_vehicles -= 1
 
-        new_route = os.path.join(map_path, cfg.uuid + ".rou.xml")
+        # Write into the run folder, never the scenario folder
+        new_route = os.path.join(cfg.run_path, cfg.uuid + ".rou.xml")
         tree.write(new_route)
 
     except FileNotFoundError:
@@ -68,7 +69,7 @@ def generate_additional_flow():
                 flow.set("number", str(new_flow))
                 total_vehicles += new_flow
 
-        new_route = os.path.join(map_path, cfg.uuid + ".flo.xml")
+        new_route = os.path.join(cfg.run_path, cfg.uuid + ".flo.xml")
         tree.write(new_route)
 
     return new_route, total_vehicles

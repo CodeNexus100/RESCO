@@ -154,6 +154,8 @@ def parse_csv_log(target_dir, i, eps_avgs, csv_met_map):
 def compress_folder(folder):
     if cfg.delete_episode_logs:
         for file in os.listdir(folder):  # Only remove performance logs
+            if file.startswith(cfg.uuid):
+                continue  # Generated route/flow file, still in use by SUMO
             if file.endswith((".xml", ".csv")):
                 # skip most recent file in case it is still being written to
                 recent_file = max(

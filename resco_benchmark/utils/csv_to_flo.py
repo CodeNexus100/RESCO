@@ -252,6 +252,7 @@ def generate_flow_from_csv(date_time, flo_file):
             root.append(vehicle)
 
     # Write xml to file
-    fp = os.path.join(os.path.dirname(flo_file), cfg.uuid + ".flo.xml")
+    # Write into the run folder, never the scenario folder
+    fp = os.path.join(cfg.run_path, cfg.uuid + ".flo.xml")
     tree.write(fp)
     return fp, vehicle_count
