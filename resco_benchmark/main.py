@@ -48,14 +48,20 @@ def main():
 
 
 def seed_everything(seed):
-    """Seed Python, numpy and (if installed) torch. SUMO is seeded per episode in MultiSignal."""
+    """Seed Python, numpy and (if installed) torch, and make torch deterministic.
+    SUMO is seeded per episode in MultiSignal."""
     random.seed(seed)
     np.random.seed(seed)
     try:
         import torch
     except ImportError:
         return
+    # Required by deterministic cuBLAS on CUDA >= 10.2; must be set before CUDA initialises
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     torch.manual_seed(seed)
+    torch.use_deterministic_algorithms(True)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 def run_trial():
