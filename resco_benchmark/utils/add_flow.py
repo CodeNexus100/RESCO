@@ -16,7 +16,9 @@ def generate_additional_flow(source_route=None):
     if source_route is None or not source_route.endswith(".rou.xml"):
         source_route = os.path.join(map_path, cfg.map + ".rou.xml")
 
-    try:
+    # Choose by existence: a try/except FileNotFoundError here also caught failures to *write* the new file (e.g.
+    # Windows path length) and misreported them as a missing .flo.xml
+    if os.path.exists(source_route):
         tree = ET.parse(source_route)
         root = tree.getroot()
 
@@ -62,7 +64,7 @@ def generate_additional_flow(source_route=None):
         new_route = os.path.join(cfg.run_path, cfg.uuid + ".rou.xml")
         tree.write(new_route)
 
-    except FileNotFoundError:
+    else:
         tree = ET.parse(os.path.join(map_path, cfg.map + ".flo.xml"))
         myroot = tree.getroot()
 
