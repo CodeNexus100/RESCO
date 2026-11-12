@@ -31,6 +31,11 @@
             step_length: 5
             yellow_length: 3
             clearance_length: 2 # all red after permissive left turn phases, use if SUMO gridlocks in high demand
+            # Optional signal timing rules, enforced by the environment for every controller (traffic_signal.Signal).
+            # Not set here on purpose: absent keys reproduce upstream behaviour and keep the config hash (run names)
+            # of runs without them unchanged. Pass on the command line, e.g. min_green:10 all_red:2
+            #   min_green: s a green must have lasted before a switch is accepted; earlier requests keep the green
+            #   all_red:   s of all-red after the yellow on every switch (upstream: clearance_length after 'g' phases only)
             step_ratio: 1   # Number of SUMO steps per step (used for sub 1s microsim update scenarios, not used atm)
 
             run_hour: null  # One of [peak, null]  only applies to saltlake, null will run from start_date until episode limit

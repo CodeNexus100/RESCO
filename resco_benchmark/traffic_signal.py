@@ -167,6 +167,11 @@ class Signal:
 
     def switch_phase(self, new_phase: int) -> None:
         if new_phase != self.current_phase:
+            # Minimum green: while a green is showing (no yellow/all-red pending) and has lasted less than min_green
+            # seconds, the request is ignored and the green continues. Applies to every controller alike.
+            min_green = cfg.min_green if "min_green" in cfg and cfg.min_green else 0
+            if self.next_phase is None and self.time_in_phase < min_green:
+                return
             self.time_since_phase[self.current_phase] = 0
             self.time_since_phase[new_phase] = 0
             self.time_in_phase = 0
@@ -176,7 +181,9 @@ class Signal:
                     self.signal_id, self.yellow_transitions[key]
                 )
                 self.next_phase = new_phase
-                if "g" in self.green_phases[self.current_phase]:
+                if "all_red" in cfg and cfg.all_red is not None:
+                    self.clearance_phase = cfg.all_red  # all-red after the yellow on every switch
+                elif "g" in self.green_phases[self.current_phase]:
                     self.clearance_phase = cfg.clearance_length
             else:
                 self.sumo.trafficlight.setRedYellowGreenState(
