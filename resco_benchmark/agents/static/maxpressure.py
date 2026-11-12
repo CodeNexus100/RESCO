@@ -6,7 +6,7 @@ class MAXPRESSURE(IndependentAgent):
     def __init__(self, obs_act):
         super().__init__(obs_act)
         for agent_id in obs_act:
-            self.agents[agent_id] = MaxAgent()
+            self.agents[agent_id] = MaxAgent(agent_id)
 
 
 class MaxAgent(WaveAgent):
