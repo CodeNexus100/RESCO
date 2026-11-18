@@ -55,6 +55,8 @@ config_to_ignore_hashing = [
 config_to_ignore_naming = [
     "clearing_signals",
     "eval_policy",
+    "eval_sumo_seed",
+    "training",
 ]
 
 
