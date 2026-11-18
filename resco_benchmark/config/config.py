@@ -105,7 +105,7 @@ def load_config():
     config_build.benchmark_path = benchmark_path
     config_build.log_dir = os.path.expanduser(config_build.log_dir)
     if not os.path.isabs(config_build.log_dir):
-        config_build.log_dir = str(os.path.join(benchmark_path, config_build.log_dir))
+        config_build.log_dir = os.path.normpath(os.path.join(benchmark_path, config_build.log_dir))  # no "resco/../": shorter paths (Windows 260-char limit)
 
     # Remove build files
     for folder in ["build", "dist", ".egg-info"]:
