@@ -31,6 +31,9 @@ class FixedAgent(Agent):
         self.offset = 0
         self.active_phase = 0
         self.active_phase_len = 0
+        # Closed loop: the phase the signal served (or was switching to) after the last step, read in observe().
+        # None = unknown (start of an episode): act as upstream does.
+        self.last_served = None
         num_acts = obs_act[1]
 
         timings = cfg[key]["fixed_timings"]
@@ -50,6 +53,13 @@ class FixedAgent(Agent):
         self.num_acts = num_acts
 
     def act(self, _=None):
+        # Closed loop: a phase's planned duration counts from the decision at which the signal took up the request.
+        # If the last request was not taken up (the environment held the current green for its minimum green, or
+        # served a clearing phase first), request the same phase again without counting this decision. Under RESCO's
+        # own timing every request is taken up at once, so this never triggers and the plan runs as upstream.
+        if self.last_served is not None and self.last_served != self.phase_order[self.active_phase]:
+            self.acts += 1
+            return self.phase_order[self.active_phase]
         if np.all(np.array(self.plan) == 0):
             self.plan[self.active_phase] = 1  # Ensure that at least one phase is active
         if self.agent_id == "B3" and self.acts == 0:
@@ -104,4 +114,10 @@ class FixedAgent(Agent):
             f.write(str(self.offset) + "\n")
 
     def observe(self, observation, reward, done, info):
-        pass
+        signal = None
+        if not done and isinstance(info, dict) and "environment" in info:
+            signal = info["environment"].signals.get(self.agent_id)
+        if signal is None:
+            self.last_served = None  # episode over (signals are rebuilt on reset) or no signal: unknown
+        else:
+            self.last_served = signal.next_phase if signal.next_phase is not None else signal.current_phase
