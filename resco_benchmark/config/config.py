@@ -49,6 +49,12 @@ config_to_ignore_hashing = [
     "home_log",
 ]
 
+# Hashed (part of the config hash) but left out of the run name: file paths in values make the run folder name long
+# enough to hit Windows' 260-character path limit (e.g. clearing_signals:../configs/clearing_signals.yaml).
+config_to_ignore_naming = [
+    "clearing_signals",
+]
+
 
 class StreamToLogger(object):
     """
@@ -223,7 +229,7 @@ def get_run_name(config_build):
         for arg in sys.argv[1:]:
             if "load_model" in arg:
                 arg = "load_model:True"  # Strip loaded model name
-            for ignore in config_to_ignore_hashing:
+            for ignore in config_to_ignore_hashing + config_to_ignore_naming:
                 skip = False
                 if ignore in arg:
                     skip = True
