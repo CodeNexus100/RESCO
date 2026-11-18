@@ -108,6 +108,18 @@ def run_trial():
         cfg.episodes * adj_len
     )  # TODO test if cfg.testing is ok for curriculum
 
+    # Evaluation of a frozen policy (eval_policy: folder written by policy_every; relative to RESCO's root)
+    if "eval_policy" in cfg and cfg.eval_policy:
+        if cfg.training or ("checkpoint" in cfg and cfg.checkpoint):
+            raise ValueError("eval_policy needs training:False and no checkpoint")
+        policy_path = cfg.eval_policy
+        if not os.path.isabs(policy_path):
+            policy_path = os.path.join(cfg.benchmark_path, policy_path)
+        n = checkpoint.load_policy(policy_path, agent)
+        agent.testing()
+        logger.info(f"Evaluating frozen policy {policy_path} ({n} DQN(s)): greedy, no learning")
+    policy_every = int(cfg.policy_every) if "policy_every" in cfg and cfg.policy_every else 0
+
     checkpointing = "checkpoint" in cfg and cfg.checkpoint
     start_episode = 0
     if checkpointing:
@@ -139,6 +151,9 @@ def run_trial():
 
         if "init_ender" in cfg and cfg.init_ender:
             break
+        # Frozen policy for evaluation, written before the checkpoint so a resume after a crash rewrites it
+        if policy_every and ((episode + 1) % policy_every == 0 or episode + 1 == minimum_length):
+            checkpoint.save_policy(cfg.run_path, episode + 1, agent)
         if checkpointing:
             env.sumo_close()  # flush this episode's tripinfo/metrics before the checkpoint covers it
             checkpoint.save_checkpoint(cfg.run_path, episode + 1, agent, env, time.time() - episode_start)

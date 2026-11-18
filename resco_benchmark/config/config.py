@@ -19,6 +19,7 @@ if not os.getcwd().endswith("resco_benchmark") and "utils" not in sys.argv[0]:
 config_to_ignore_hashing = [
     "uuid",
     "run_uuid",  # fixed run folder for checkpoint/resume; does not change results
+    "policy_every",  # only writes frozen policies for evaluation; does not change results
     "checkpoint",
     "log_dir",
     "names_map",
@@ -53,6 +54,7 @@ config_to_ignore_hashing = [
 # enough to hit Windows' 260-character path limit (e.g. clearing_signals:../configs/clearing_signals.yaml).
 config_to_ignore_naming = [
     "clearing_signals",
+    "eval_policy",
 ]
 
 

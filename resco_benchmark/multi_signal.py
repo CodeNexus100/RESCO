@@ -296,7 +296,12 @@ class MultiSignal(gym.Env):
             cfg.run_path + "tripinfo_{0}.xml".format(self.cumulative_episode),
         ]
 
-        if self.sumo_seed_rng is None:
+        if "eval_sumo_seed" in cfg and cfg.eval_sumo_seed is not None:
+            # Evaluation: episode k (1-based) runs SUMO seed eval_sumo_seed + k - 1, independent of cfg.seed
+            episode_seed = int(cfg.eval_sumo_seed) + max(self.cumulative_episode - 1, 0)
+            sumo_cmd += ["--seed", str(episode_seed)]
+            logger.info(f"Episode {self.cumulative_episode} SUMO seed: {episode_seed} (evaluation)")
+        elif self.sumo_seed_rng is None:
             sumo_cmd += ["--random", "True"]
         else:
             episode_seed = int(self.sumo_seed_rng.integers(0, 2**31 - 1))

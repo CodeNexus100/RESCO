@@ -40,6 +40,10 @@
             #     'g' links into protected 'G' (e.g. a protected-left phase), any switch goes to that next green first
             #   clearing_signals: YAML file ({maps: {<map>: [signal ids]}}, path relative to resco/) restricting
             #     clearing_phase_first to the listed signals of the map; a map missing from the file is an error
+            # Optional evaluation protocol (project tools/run_experiment.py --protocol):
+            #   policy_every: N   write the policy weights to run_path/policy_<episode>/ every N episodes and at the end
+            #   eval_policy: dir  load such a folder, greedy and no learning (needs training:False)
+            #   eval_sumo_seed: B episode k uses SUMO seed B + k - 1 (held-out seeds)
             step_ratio: 1   # Number of SUMO steps per step (used for sub 1s microsim update scenarios, not used atm)
 
             run_hour: null  # One of [peak, null]  only applies to saltlake, null will run from start_date until episode limit

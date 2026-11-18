@@ -12,6 +12,8 @@ Layout in cfg.run_path:
                                are too long for folder names under Windows' 260-character path limit)
         COMPLETE               written last; folders without it are ignored (interrupted mid-write)
     progress.csv               episode, finished_unix_time, episode_seconds (appended every episode)
+    policy_<episode>/          (policy_every:N) frozen policy for evaluation: model_<i>.pt (model state_dict of the
+                               i-th DQN) and agents.txt; written every N episodes and after the last one, never pruned
     final_model_<i>.pt         trained weights (model state_dict) of the i-th DQN, written when the run finishes;
     final_model_agents.txt     which agent / signal each final_model_<i>.pt belongs to
 """
@@ -133,6 +135,42 @@ def load_latest_checkpoint(run_path, agent, env):
     env.best_episode = state["env"]["best_episode"]
     _set_rng_state(state["rng"])
     return episode
+
+
+def save_policy(run_path, episode, agent):
+    """Write the current model weights of every DQN to policy_<episode>/ (atomically: a .tmp folder renamed when
+    complete). Weights only, no replay buffer: small enough to keep one per evaluation point."""
+    import torch
+
+    path = os.path.join(run_path, f"policy_{episode}")
+    tmp = path + ".tmp"
+    shutil.rmtree(tmp, ignore_errors=True)
+    os.makedirs(tmp)
+    dqns = pfrl_dqns(agent)
+    for i, dqn in enumerate(dqns.values()):
+        torch.save(dqn.model.state_dict(), os.path.join(tmp, f"model_{i}.pt"))
+    with open(os.path.join(tmp, "agents.txt"), "w") as f:
+        f.writelines(f"{name}\n" for name in dqns)
+    shutil.rmtree(path, ignore_errors=True)
+    os.rename(tmp, path)
+
+
+def load_policy(path, agent):
+    """Load a policy_<episode>/ folder into every DQN (model and target model) and freeze it: pfrl's training flag
+    off, so actions are greedy (no exploration) and observe() never updates the network."""
+    import torch
+
+    dqns = pfrl_dqns(agent)
+    with open(os.path.join(path, "agents.txt")) as f:
+        names = [line.rstrip("\n") for line in f if line.strip()]
+    if names != list(dqns):
+        raise RuntimeError(f"policy agents {names} do not match this run's agents {list(dqns)}")
+    for i, dqn in enumerate(dqns.values()):
+        state = torch.load(os.path.join(path, f"model_{i}.pt"), map_location=dqn.device, weights_only=True)
+        dqn.model.load_state_dict(state)
+        dqn.target_model.load_state_dict(state)
+        dqn.training = False
+    return len(dqns)
 
 
 def finalize(run_path, agent):
