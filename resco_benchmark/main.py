@@ -67,6 +67,12 @@ def seed_everything(seed):
 
 def run_trial():
     print(f"cfg.run_name: {cfg.run_name}")
+    if "torch_threads" in cfg and cfg.torch_threads:
+        # Limit torch's intra-op threads (many runs share one machine); set OMP_NUM_THREADS in the environment too
+        import torch
+
+        torch.set_num_threads(int(cfg.torch_threads))
+        logger.info(f"torch threads: {torch.get_num_threads()}")
     if cfg.seed is not None:
         seed_everything(int(cfg.seed))
         logger.info(f"Seeded python/numpy/torch with {cfg.seed}")

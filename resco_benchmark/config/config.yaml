@@ -44,6 +44,7 @@
             #   policy_every: N   write the policy weights to run_path/policy_<episode>/ every N episodes and at the end
             #   eval_policy: dir  load such a folder, greedy and no learning (needs training:False)
             #   eval_sumo_seed: B episode k uses SUMO seed B + k - 1 (held-out seeds)
+            # torch_threads: N  torch.set_num_threads(N) at start (hashed, not in the run name)
             step_ratio: 1   # Number of SUMO steps per step (used for sub 1s microsim update scenarios, not used atm)
 
             run_hour: null  # One of [peak, null]  only applies to saltlake, null will run from start_date until episode limit

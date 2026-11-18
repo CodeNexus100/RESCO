@@ -57,6 +57,7 @@ config_to_ignore_naming = [
     "eval_policy",
     "eval_sumo_seed",
     "training",
+    "torch_threads",
 ]
 
 
