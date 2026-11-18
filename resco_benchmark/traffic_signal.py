@@ -205,8 +205,9 @@ class Signal:
                                     selfkey.split("-")[1] == key.split("-")[0]
                                 ):  # Out dir. matches dwnstrm in dir.
                                     self.lane_sets_outbound[selfkey] += dwn_lane_set
-        for key in self.lane_sets_outbound:  # Remove duplicates
-            self.lane_sets_outbound[key] = list(set(self.lane_sets_outbound[key]))
+        for key in self.lane_sets_outbound:  # Remove duplicates; sorted, so the order doesn't depend on
+            # PYTHONHASHSEED (set iteration order of strings is randomised per process)
+            self.lane_sets_outbound[key] = sorted(set(self.lane_sets_outbound[key]))
 
     def switch_phase(self, new_phase: int) -> None:
         if new_phase != self.current_phase:

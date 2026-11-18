@@ -426,10 +426,10 @@ class StateBuilder:
     def __call__(self, signals):
         call_states, lane_sts, veh_sts = list(), list(), list()
         # Call functions
-        for func in self.incl_signal:
+        for func in sorted(self.incl_signal):  # sorted: set order depends on PYTHONHASHSEED
             call_states.append(self.signal_functions[func](signals))
 
-        for func in self.incl_lane:
+        for func in sorted(self.incl_lane):
             lvl_spl = func.split("+")
             if len(lvl_spl) == 2:
                 val_spl = lvl_spl[1].split("_")
@@ -443,7 +443,7 @@ class StateBuilder:
             else:
                 lane_sts.append(self.lane_functions[func](signals))
 
-        for func in self.incl_veh:
+        for func in sorted(self.incl_veh):
             veh_sts.append(vehicle_value(signals, func))
 
         # Put results together into states to be sent to each signal
@@ -475,7 +475,7 @@ class StateBuilder:
                         dwn_signal = signal.out_lane_to_signal_id[lane_id]
                         if dwn_signal in signal.signals:
                             dwn_signals.add(dwn_signal)
-                for dwn_signal in dwn_signals:
+                for dwn_signal in sorted(dwn_signals):
                     sb = StateBuilder(self.incl_downstream)
                     dwn_val = list(sb({dwn_signal: signals[dwn_signal]})[dwn_signal])
                     signal_states[signal_id].extend(dwn_val)
