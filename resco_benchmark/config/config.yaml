@@ -36,6 +36,8 @@
             # of runs without them unchanged. Pass on the command line, e.g. min_green:10 all_red:2
             #   min_green: s a green must have lasted before a switch is accepted; earlier requests keep the green
             #   all_red:   s of all-red after the yellow on every switch (upstream: clearance_length after 'g' phases only)
+            #   clearing_phase_first: true = leaving a phase whose next green in the plan turns some of its permissive
+            #     'g' links into protected 'G' (e.g. a protected-left phase), any switch goes to that next green first
             step_ratio: 1   # Number of SUMO steps per step (used for sub 1s microsim update scenarios, not used atm)
 
             run_hour: null  # One of [peak, null]  only applies to saltlake, null will run from start_date until episode limit

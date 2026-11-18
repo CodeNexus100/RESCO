@@ -46,6 +46,23 @@ def create_yellows(phases: dict[int, str]) -> dict[str, str]:
     return yellow_transitions
 
 
+def clearing_successors(phases: dict[int, str]) -> dict[int, int | None]:
+    """For each green phase, the plan's next green phase if it is a clearing phase for it, else None.
+
+    The next green (plan order, cyclic) clears phase i if it gives protected green 'G' to a link that is permissive 'g'
+    in phase i: e.g. a protected-left phase after a phase with permissive lefts. Used by the optional
+    `clearing_phase_first` rule."""
+    n = len(phases)
+    result: dict[int, int | None] = dict()
+    for i in range(n):
+        nxt = (i + 1) % n
+        clears = nxt != i and any(
+            c == "g" and d == "G" for c, d in zip(phases[i], phases[nxt])
+        )
+        result[i] = nxt if clears else None
+    return result
+
+
 class Signal:
     def __init__(self, sumo, signal_id: int) -> None:
         self.sumo = sumo
@@ -112,6 +129,7 @@ class Signal:
                 idx += 1
 
         self.yellow_transitions = create_yellows(self.green_phases)
+        self.clearing_next: dict[int, int | None] = clearing_successors(self.green_phases)
 
         self.current_phase: int = 0
         self.next_phase: int = self.current_phase
@@ -172,6 +190,13 @@ class Signal:
             min_green = cfg.min_green if "min_green" in cfg and cfg.min_green else 0
             if self.next_phase is None and self.time_in_phase < min_green:
                 return
+            # Clearing phase first: leaving a phase whose plan successor is its clearing phase (see
+            # clearing_successors), any switch goes to that successor. Permissive left-turners waiting inside the
+            # junction are cleared before the cross street gets green, as in the plan.
+            if "clearing_phase_first" in cfg and cfg.clearing_phase_first:
+                clearing = self.clearing_next[self.current_phase]
+                if clearing is not None:
+                    new_phase = clearing
             self.time_since_phase[self.current_phase] = 0
             self.time_since_phase[new_phase] = 0
             self.time_in_phase = 0
