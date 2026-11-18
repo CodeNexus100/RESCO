@@ -63,6 +63,27 @@ def clearing_successors(phases: dict[int, str]) -> dict[int, int | None]:
     return result
 
 
+_CLEARING_SIGNALS_CACHE: dict[str, dict] = dict()
+
+
+def clearing_signals_for_map(path: str, map_name: str) -> set[str]:
+    """Signal ids of `map_name` listed in a clearing-signals YAML file (`maps: {<map>: [ids]}`), as written by the
+    project's tools/clearing_signals.py. A relative path is resolved against RESCO's root (like log_dir). A map
+    missing from the file is an error: the rule must never silently default to all or no signals."""
+    import os
+    import yaml
+
+    if not os.path.isabs(path):
+        path = os.path.join(cfg.benchmark_path, path)
+    if path not in _CLEARING_SIGNALS_CACHE:
+        with open(path) as f:
+            _CLEARING_SIGNALS_CACHE[path] = yaml.safe_load(f)
+    maps = _CLEARING_SIGNALS_CACHE[path].get("maps") or {}
+    if map_name not in maps:
+        raise KeyError(f"map {map_name!r} not listed in clearing_signals file {path}")
+    return {str(s) for s in (maps[map_name] or [])}
+
+
 class Signal:
     def __init__(self, sumo, signal_id: int) -> None:
         self.sumo = sumo
@@ -130,6 +151,10 @@ class Signal:
 
         self.yellow_transitions = create_yellows(self.green_phases)
         self.clearing_next: dict[int, int | None] = clearing_successors(self.green_phases)
+        # Optional clearing_signals: restrict clearing_phase_first to the signals listed for this map
+        if "clearing_signals" in cfg and cfg.clearing_signals:
+            if str(self.signal_id) not in clearing_signals_for_map(cfg.clearing_signals, cfg.map):
+                self.clearing_next = {i: None for i in self.clearing_next}
 
         self.current_phase: int = 0
         self.next_phase: int = self.current_phase
