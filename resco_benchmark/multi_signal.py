@@ -294,10 +294,11 @@ class MultiSignal(gym.Env):
 
         extra_sumo_args = []
         if "sumo_extra_args" in cfg and cfg.sumo_extra_args:
-            # Optional sumo_extra_args hook: whitespace-separated SUMO options; {episode} and {run_path} are
+            # Optional sumo_extra_args hook: whitespace-separated SUMO options; {episode}, {run_path} and {cwd} are
             # substituted per episode. Absent = upstream behaviour.
             extra_sumo_args = [
                 a.replace("{episode}", str(self.cumulative_episode)).replace("{run_path}", str(cfg.run_path))
+                .replace("{cwd}", os.getcwd())
                 for a in str(cfg.sumo_extra_args).split()
             ]
         sumo_cmd = self.sumo_cmd + extra_sumo_args + [
