@@ -48,7 +48,7 @@
             # Generic hooks (hashed, not in the run name; absent = upstream behaviour):
             #   action_filter: package.module.factory   factory(env) per episode returns f(env, act) -> act, applied
             #                  before switch_phase (e.g. a runtime shield); the module must be importable
-            #   sumo_extra_args: "<SUMO options>"        appended to every episode's SUMO command; {episode}, {cwd} and
+            #   sumo_extra_args: "<SUMO options>"        appended to every episode's SUMO command; {episode}, {resco_root} and
             #                  {run_path} are substituted (e.g. extra outputs)
             step_ratio: 1   # Number of SUMO steps per step (used for sub 1s microsim update scenarios, not used atm)
 
