@@ -1,5 +1,6 @@
 import os
 import datetime
+import importlib
 import logging
 import pickle
 import uuid
@@ -291,7 +292,15 @@ class MultiSignal(gym.Env):
                     str(cfg.end_time),
                 ]
 
-        sumo_cmd = self.sumo_cmd + [
+        extra_sumo_args = []
+        if "sumo_extra_args" in cfg and cfg.sumo_extra_args:
+            # Optional sumo_extra_args hook: whitespace-separated SUMO options; {episode} and {run_path} are
+            # substituted per episode. Absent = upstream behaviour.
+            extra_sumo_args = [
+                a.replace("{episode}", str(self.cumulative_episode)).replace("{run_path}", str(cfg.run_path))
+                for a in str(cfg.sumo_extra_args).split()
+            ]
+        sumo_cmd = self.sumo_cmd + extra_sumo_args + [
             "--tripinfo-output",
             cfg.run_path + "tripinfo_{0}.xml".format(self.cumulative_episode),
         ]
@@ -385,6 +394,13 @@ class MultiSignal(gym.Env):
             self.signals[ts].signals = self.signals
             self.signals[ts].observe()
 
+        # Optional action_filter hook: "package.module.factory"; factory(env) is called once per episode and returns
+        # f(env, act) -> act, applied to every decision's actions before switch_phase. Absent = upstream behaviour.
+        self.action_filter = None
+        if "action_filter" in cfg and cfg.action_filter:
+            module_name, factory_name = str(cfg.action_filter).rsplit(".", 1)
+            self.action_filter = getattr(importlib.import_module(module_name), factory_name)(self)
+
         return self.state_fn(self.signals), info
 
     def get_saltlake_data(self):
@@ -446,6 +462,8 @@ class MultiSignal(gym.Env):
         if self.action_mask is not None:
             act = self.action_mask.act(act)
         act = self.uncontrolled_acts(act)
+        if getattr(self, "action_filter", None) is not None:
+            act = self.action_filter(self, act)
 
         cutoff = traci.simulation.getTime()
         for signal in self.signals:
